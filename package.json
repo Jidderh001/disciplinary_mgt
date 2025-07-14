@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "my-project",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -45,7 +45,7 @@
     "embla-carousel-react": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
-    "next": "15.2.4",
+    "next": "^15.2.4",
     "next-themes": "latest",
     "react": "^19",
     "react-day-picker": "latest",

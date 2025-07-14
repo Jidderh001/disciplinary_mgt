@@ -358,7 +358,7 @@ export function AdminDashboard() {
         </Tabs>
       </CardContent>
       <CardFooter>
-        <p className="text-sm text-muted-foreground">This is a demo. Data is not persisted.</p>
+        
       </CardFooter>
     </Card>
   )
