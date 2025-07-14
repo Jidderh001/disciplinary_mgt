@@ -381,7 +381,7 @@ export function AdminDashboard({}: AdminDashboardProps) {
             </Card>
           </TabsContent>
         </Tabs>
- 
+      </CardContent>
     </Card>
   )
 }
