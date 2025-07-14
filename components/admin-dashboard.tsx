@@ -381,13 +381,7 @@ export function AdminDashboard({}: AdminDashboardProps) {
             </Card>
           </TabsContent>
         </Tabs>
-      </CardContent>
-<<<<<<< HEAD
-      <CardFooter>
-        
-      </CardFooter>
-=======
->>>>>>> 5e84ce4bbdf3fe1e97b7bb09286fff8e6e567135
+ 
     </Card>
   )
 }
