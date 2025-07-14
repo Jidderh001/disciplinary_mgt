@@ -3,7 +3,7 @@ export type User = {
   name: string
   role: "admin" | "student"
   email: string
-  password?: string
+  password: string
 }
 
 export type DisciplinaryAction = {
@@ -88,6 +88,19 @@ export const addUser = (user: Omit<User, "id">) => {
   const newUser = { ...user, id: `user-${Date.now()}` }
   currentUsers.push(newUser)
   return newUser
+}
+
+export const addOrUpdateUser = (user: Omit<User, "id"> & { id?: string }) => {
+  if (user.id) {
+    // update path
+    const existing = currentUsers.find((u) => u.id === user.id)
+    if (existing) {
+      Object.assign(existing, user)
+      return existing
+    }
+  }
+  // add path
+  return addUser(user)
 }
 export const updateUser = (updatedUser: User) => {
   currentUsers = currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
