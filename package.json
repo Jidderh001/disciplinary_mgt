@@ -1,7 +1,8 @@
 {
-  "name": "my-v0-project",
+  "name": "disciplinary-system",
   "version": "0.1.0",
   "private": true,
+  "description": "A comprehensive disciplinary system for schools.",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -41,7 +42,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
-    "date-fns": "4.1.0",
+    "date-fns": "latest",
     "embla-carousel-react": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
