@@ -16,9 +16,10 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { getDisciplinaryActions, getUserById, addAppeal, updateDisciplinaryAction, getAppeals } from "@/app/actions" // Import getAppeals
+import { getDisciplinaryActions, getUserById, addAppeal, updateDisciplinaryAction, getAppeals } from "@/app/actions"
 import type { DisciplinaryAction, User, Appeal } from "@/types/data"
 import { format } from "date-fns"
+import { useToast } from "@/hooks/use-toast" // Import useToast
 
 interface StudentDashboardProps {
   studentId: string
@@ -27,12 +28,14 @@ interface StudentDashboardProps {
 export function StudentDashboard({ studentId }: StudentDashboardProps) {
   const [student, setStudent] = useState<User | null>(null)
   const [studentActions, setStudentActions] = useState<DisciplinaryAction[]>([])
-  const [allAppeals, setAllAppeals] = useState<Appeal[]>([]) // New state for all appeals
+  const [allAppeals, setAllAppeals] = useState<Appeal[]>([])
 
   const [isAppealDialogOpen, setIsAppealDialogOpen] = useState(false)
   const [selectedActionForAppeal, setSelectedActionForAppeal] = useState<DisciplinaryAction | null>(null)
   const [appealReason, setAppealReason] = useState("")
   const [evidenceLink, setEvidenceLink] = useState("")
+
+  const { toast } = useToast() // Initialize toast
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +45,7 @@ export function StudentDashboard({ studentId }: StudentDashboardProps) {
       const allActions = await getDisciplinaryActions()
       setStudentActions(allActions.filter((action) => action.studentId === studentId))
 
-      setAllAppeals(await getAppeals()) // Fetch all appeals
+      setAllAppeals(await getAppeals())
     }
     fetchData()
   }, [studentId])
@@ -56,7 +59,11 @@ export function StudentDashboard({ studentId }: StudentDashboardProps) {
 
   const handleSubmitAppeal = async () => {
     if (!selectedActionForAppeal || !appealReason.trim()) {
-      alert("Appeal reason cannot be empty.")
+      toast({
+        title: "Appeal Submission Failed",
+        description: "Appeal reason cannot be empty.",
+        variant: "destructive",
+      })
       return
     }
 
@@ -69,7 +76,6 @@ export function StudentDashboard({ studentId }: StudentDashboardProps) {
       status: "Pending",
     })
 
-    // Update the disciplinary action status to "Appealed" and link the appeal
     await updateDisciplinaryAction({
       ...selectedActionForAppeal,
       status: "Appealed",
@@ -81,7 +87,11 @@ export function StudentDashboard({ studentId }: StudentDashboardProps) {
     setAppealReason("")
     setEvidenceLink("")
 
-    // Re-fetch data to update the UI
+    toast({
+      title: "Appeal Submitted",
+      description: "Your appeal has been successfully submitted for review.",
+    })
+
     const allActions = await getDisciplinaryActions()
     setStudentActions(allActions.filter((action) => action.studentId === studentId))
   }
