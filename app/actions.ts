@@ -74,8 +74,12 @@ export async function getUserById(id: string): Promise<User | undefined> {
   return currentUsers.find((user) => user.id === id)
 }
 
-export async function findUserByEmailAndPassword(email: string, password: string): Promise<User | undefined> {
-  return currentUsers.find((user) => user.email === email && user.password === password)
+export async function findUserByEmailAndPassword(
+  email: string,
+  password: string,
+  role: "admin" | "student", // Added role parameter
+): Promise<User | undefined> {
+  return currentUsers.find((user) => user.email === email && user.password === password && user.role === role)
 }
 
 export async function addOrUpdateUser(user: Omit<User, "id"> & { id?: string }): Promise<User> {

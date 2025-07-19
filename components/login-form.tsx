@@ -6,8 +6,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { findUserByEmailAndPassword } from "@/app/actions" // Import from actions
-import type { User } from "@/types/data" // Import type from types
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Import Select components
+import { findUserByEmailAndPassword } from "@/app/actions"
+import type { User } from "@/types/data"
 
 interface LoginFormProps {
   onLoginSuccess: (user: User) => void
@@ -16,19 +17,20 @@ interface LoginFormProps {
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [role, setRole] = useState<"admin" | "student">("student") // New state for role
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null) // Clear previous errors
 
-    // Call the server action for login
-    const user = await findUserByEmailAndPassword(email, password)
+    // Call the server action for login, passing the selected role
+    const user = await findUserByEmailAndPassword(email, password, role)
 
     if (user) {
       onLoginSuccess(user)
     } else {
-      setError("Invalid email or password. Please try again.")
+      setError("Invalid email, password, or role. Please try again.")
     }
   }
 
@@ -60,6 +62,18 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={(value: "admin" | "student") => setRole(value)}>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Student</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <Button type="submit" className="w-full">
