@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   addDisciplinaryAction,
   updateDisciplinaryAction,
@@ -11,9 +11,10 @@ import {
   addOrUpdateUser,
   deleteUser,
   getUsers,
-  type DisciplinaryAction,
-  type User,
-} from "@/lib/data"
+  getAppeals,
+  updateAppeal,
+} from "@/app/actions" // Import from actions
+import type { DisciplinaryAction, User, Appeal } from "@/types/data" // Import types
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 import { format } from "date-fns"
 
 type AdminDashboardProps = {}
@@ -37,22 +47,37 @@ export function AdminDashboard({}: AdminDashboardProps) {
   // User Management State
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
-  const [userPassword, setUserPassword] = useState("") // This will be for new password input
+  const [userPassword, setUserPassword] = useState("")
   const [userRole, setUserRole] = useState<User["role"]>("student")
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
 
+  // Appeal Management State
+  const [isAppealDetailsDialogOpen, setIsAppealDetailsDialogOpen] = useState(false)
+  const [selectedAppealDetails, setSelectedAppealDetails] = useState<Appeal | null>(null)
+
   // State for users and disciplinary actions to trigger re-renders
-  const [allUsers, setAllUsers] = useState<User[]>(getUsers())
-  const [allDisciplinaryActions, setAllDisciplinaryActions] = useState<DisciplinaryAction[]>(getDisciplinaryActions())
+  const [allUsers, setAllUsers] = useState<User[]>([])
+  const [allDisciplinaryActions, setAllDisciplinaryActions] = useState<DisciplinaryAction[]>([])
+  const [allAppeals, setAllAppeals] = useState<Appeal[]>([])
+
+  // Fetch data on component mount and whenever data might have changed
+  useEffect(() => {
+    const fetchData = async () => {
+      setAllUsers(await getUsers())
+      setAllDisciplinaryActions(await getDisciplinaryActions())
+      setAllAppeals(await getAppeals())
+    }
+    fetchData()
+  }, []) // Empty dependency array means this runs once on mount
 
   const studentUsers = allUsers.filter((user) => user.role === "student")
 
-  const handleRecordAction = (e: React.FormEvent) => {
+  const handleRecordAction = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!studentId || !actionTaken || !reason) return
 
     if (editingCaseId) {
-      updateDisciplinaryAction({
+      await updateDisciplinaryAction({
         id: editingCaseId,
         studentId,
         studentName: allUsers.find((u) => u.id === studentId)?.name ?? "Unknown",
@@ -63,7 +88,7 @@ export function AdminDashboard({}: AdminDashboardProps) {
       })
       setEditingCaseId(null)
     } else {
-      addDisciplinaryAction({
+      await addDisciplinaryAction({
         studentId,
         studentName: allUsers.find((u) => u.id === studentId)?.name ?? "Unknown",
         date: new Date().toISOString().split("T")[0],
@@ -76,7 +101,7 @@ export function AdminDashboard({}: AdminDashboardProps) {
     setActionTaken("")
     setReason("")
     setCaseStatus("Pending")
-    setAllDisciplinaryActions(getDisciplinaryActions()) // Update state to re-render
+    setAllDisciplinaryActions(await getDisciplinaryActions()) // Update state to re-render
   }
 
   const handleEditCase = (caseToEdit: DisciplinaryAction) => {
@@ -87,56 +112,56 @@ export function AdminDashboard({}: AdminDashboardProps) {
     setCaseStatus(caseToEdit.status)
   }
 
-  const handleDeleteCase = (id: string) => {
-    deleteDisciplinaryAction(id)
-    setAllDisciplinaryActions(getDisciplinaryActions()) // Update state to re-render
+  const handleDeleteCase = async (id: string) => {
+    await deleteDisciplinaryAction(id)
+    setAllDisciplinaryActions(await getDisciplinaryActions()) // Update state to re-render
+    setAllAppeals(await getAppeals()) // Update appeals as well, since they might be linked
   }
 
-  const handleAddOrUpdateUser = (e: React.FormEvent) => {
+  const handleAddOrUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userName || !userEmail) return // Password is now optional for updates
+    if (!userName || !userEmail) return
 
     const userData: Omit<User, "id"> & { id?: string } = {
       id: editingUserId || undefined,
       name: userName,
       email: userEmail,
       role: userRole,
-      password: userPassword, // Initialize with current password state
+      password: userPassword,
     }
 
-    // If editing an existing user and no new password is provided, retain the old one
     if (editingUserId && !userPassword) {
       const existingUser = allUsers.find((u) => u.id === editingUserId)
       if (existingUser) {
         userData.password = existingUser.password
       }
     } else if (!userPassword && !editingUserId) {
-      // If adding a new user and no password, prevent submission
       alert("Password is required for new users.")
       return
     }
 
-    addOrUpdateUser(userData)
+    await addOrUpdateUser(userData)
     setUserName("")
     setUserEmail("")
     setUserPassword("")
     setUserRole("student")
     setEditingUserId(null)
-    setAllUsers(getUsers()) // Update state to re-render
+    setAllUsers(await getUsers()) // Update state to re-render
   }
 
   const handleEditUser = (userToEdit: User) => {
     setEditingUserId(userToEdit.id)
     setUserName(userToEdit.name)
     setUserEmail(userToEdit.email)
-    setUserPassword("") // Clear password field when editing for security
+    setUserPassword("")
     setUserRole(userToEdit.role)
   }
 
-  const handleDeleteUser = (id: string) => {
-    deleteUser(id)
-    setAllUsers(getUsers()) // Update state to re-render
-    setAllDisciplinaryActions(getDisciplinaryActions()) // Also update disciplinary actions as they might be linked
+  const handleDeleteUser = async (id: string) => {
+    await deleteUser(id)
+    setAllUsers(await getUsers())
+    setAllDisciplinaryActions(await getDisciplinaryActions())
+    setAllAppeals(await getAppeals())
   }
 
   const handleCancelEditUser = () => {
@@ -155,6 +180,19 @@ export function AdminDashboard({}: AdminDashboardProps) {
     setEditingCaseId(null)
   }
 
+  const handleViewAppealDetails = (appeal: Appeal) => {
+    setSelectedAppealDetails(appeal)
+    setIsAppealDetailsDialogOpen(true)
+  }
+
+  const handleUpdateAppealStatus = async (status: Appeal["status"]) => {
+    if (selectedAppealDetails) {
+      await updateAppeal({ ...selectedAppealDetails, status })
+      setAllAppeals(await getAppeals()) // Re-fetch appeals to update the list
+      setIsAppealDetailsDialogOpen(false)
+    }
+  }
+
   return (
     <Card className="w-full max-w-5xl">
       <CardHeader>
@@ -162,9 +200,10 @@ export function AdminDashboard({}: AdminDashboardProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="case-management" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="case-management">Case Management</TabsTrigger>
             <TabsTrigger value="user-management">User Management</TabsTrigger>
+            <TabsTrigger value="appeal-management">Appeal Management</TabsTrigger>
           </TabsList>
           <TabsContent value="case-management" className="mt-4">
             <Card>
@@ -316,7 +355,7 @@ export function AdminDashboard({}: AdminDashboardProps) {
                       value={userPassword}
                       onChange={(e) => setUserPassword(e.target.value)}
                       placeholder={editingUserId ? "Leave blank to keep current password" : "Password"}
-                      required={!editingUserId} // Password is required only for new users
+                      required={!editingUserId}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -380,8 +419,133 @@ export function AdminDashboard({}: AdminDashboardProps) {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* New Appeal Management Tab Content */}
+          <TabsContent value="appeal-management" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Appeals</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {allAppeals.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No appeals submitted yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Appeal ID</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Case Reason</TableHead>
+                        <TableHead>Appeal Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allAppeals.map((appeal) => {
+                        const student = allUsers.find((user) => user.id === appeal.studentId)
+                        const disciplinaryCase = allDisciplinaryActions.find(
+                          (action) => action.id === appeal.disciplinaryActionId,
+                        )
+                        return (
+                          <TableRow key={appeal.id}>
+                            <TableCell className="font-mono text-xs">{appeal.id.substring(0, 8)}...</TableCell>
+                            <TableCell>{student ? student.name : "Unknown"}</TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              {disciplinaryCase?.reason || "N/A"}
+                            </TableCell>
+                            <TableCell>{format(new Date(appeal.appealDate), "PPP")}</TableCell>
+                            <TableCell>{appeal.status}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="outline" size="sm" onClick={() => handleViewAppealDetails(appeal)}>
+                                View Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Appeal Details Dialog for Admin */}
+      <Dialog open={isAppealDetailsDialogOpen} onOpenChange={setIsAppealDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Appeal Details</DialogTitle>
+            <DialogDescription>Review the details of this appeal.</DialogDescription>
+          </DialogHeader>
+          {selectedAppealDetails && (
+            <div className="grid gap-4 py-4 text-sm">
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label className="text-right">Appeal ID:</Label>
+                <span className="col-span-2 font-mono text-xs">{selectedAppealDetails.id}</span>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label className="text-right">Case ID:</Label>
+                <span className="col-span-2 font-mono text-xs">{selectedAppealDetails.disciplinaryActionId}</span>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label className="text-right">Student:</Label>
+                <span className="col-span-2">
+                  {allUsers.find((u) => u.id === selectedAppealDetails.studentId)?.name || "Unknown"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 items-start gap-4">
+                <Label className="text-right pt-2">Appeal Reason:</Label>
+                <p className="col-span-2 break-words">{selectedAppealDetails.appealReason}</p>
+              </div>
+              {selectedAppealDetails.evidenceLink && (
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label className="text-right">Evidence:</Label>
+                  <a
+                    href={selectedAppealDetails.evidenceLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="col-span-2 text-blue-600 hover:underline truncate"
+                  >
+                    {selectedAppealDetails.evidenceLink}
+                  </a>
+                </div>
+              )}
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label className="text-right">Appeal Date:</Label>
+                <span className="col-span-2">{format(new Date(selectedAppealDetails.appealDate), "PPP")}</span>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-4">
+                <Label className="text-right">Status:</Label>
+                <span className="col-span-2 font-medium">{selectedAppealDetails.status}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => handleUpdateAppealStatus("Approved")}
+              disabled={selectedAppealDetails?.status === "Approved"}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleUpdateAppealStatus("Rejected")}
+              disabled={selectedAppealDetails?.status === "Rejected"}
+            >
+              Reject
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

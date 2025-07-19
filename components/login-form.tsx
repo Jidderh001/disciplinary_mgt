@@ -6,7 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { findUserByEmailAndPassword, type User } from "@/lib/data"
+import { findUserByEmailAndPassword } from "@/app/actions" // Import from actions
+import type { User } from "@/types/data" // Import type from types
 
 interface LoginFormProps {
   onLoginSuccess: (user: User) => void
@@ -17,11 +18,12 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null) // Clear previous errors
 
-    const user = findUserByEmailAndPassword(email, password)
+    // Call the server action for login
+    const user = await findUserByEmailAndPassword(email, password)
 
     if (user) {
       onLoginSuccess(user)
@@ -65,7 +67,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </Button>
         </form>
         <div className="mt-4 text-center text-sm text-muted-foreground">
-         
+          <p>
+            Try with:
+            <br />
+            Admin: `admin@example.com` / `password`
+            <br />
+            Student: `alice@example.com` / `password`
+          </p>
         </div>
       </CardContent>
     </Card>
