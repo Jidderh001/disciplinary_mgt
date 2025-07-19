@@ -80,15 +80,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             Login
           </Button>
         </form>
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          <p>
-            Try with:
-            <br />
-            Admin: `admin@example.com` / `password`
-            <br />
-            Student: `alice@example.com` / `password`
-          </p>
-        </div>
+       
       </CardContent>
     </Card>
   )
